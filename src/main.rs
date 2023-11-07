@@ -3,8 +3,8 @@ use std::{io::Write, net::TcpListener};
 use response::Response;
 use status_code::StatusCode;
 
-mod method;
-mod request;
+// mod method;
+// mod request;
 mod response;
 mod status_code;
 
