@@ -1,4 +1,5 @@
 use anyhow::Result;
+use std::collections::HashMap;
 use tokio::{
     io::{self, AsyncReadExt, AsyncWriteExt},
     net::{TcpListener, TcpStream},
@@ -12,6 +13,29 @@ mod method;
 mod request;
 mod response;
 mod status_code;
+
+fn generate_response(request: &Request) -> Response {
+    if request.target == "/" {
+        Response::from_status_code(StatusCode::OK)
+    } else if request.target.starts_with("/echo/") {
+        let random_string = request.target.trim_start_matches("/echo/");
+        Response {
+            status_code: StatusCode::OK,
+            headers: vec![
+                ("Content-Type".to_string(), "text/plain".to_string()),
+                (
+                    "Content-Length".to_string(),
+                    random_string.len().to_string(),
+                ),
+            ]
+            .into_iter()
+            .collect::<HashMap<String, String>>(),
+            body: Some(random_string.as_bytes().to_vec()),
+        }
+    } else {
+        Response::from_status_code(StatusCode::NotFound)
+    }
+}
 
 async fn handle_connection(mut stream: TcpStream) -> Result<()> {
     let mut buf = Vec::with_capacity(1024);
@@ -28,11 +52,7 @@ async fn handle_connection(mut stream: TcpStream) -> Result<()> {
                     stream.read_exact(&mut body[rest.len()..]).await?;
                     request.set_body(&body);
 
-                    let response = if request.target == "/" {
-                        Response::from_status_code(StatusCode::OK)
-                    } else {
-                        Response::from_status_code(StatusCode::NotFound)
-                    };
+                    let response = generate_response(&request);
                     stream.write_all(&response.encode()?).await?;
                     stream.shutdown().await?;
 
