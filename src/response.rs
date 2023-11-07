@@ -19,6 +19,19 @@ impl Response {
         }
     }
 
+    pub fn from_body(body: Vec<u8>) -> Self {
+        Response {
+            status_code: StatusCode::OK,
+            headers: vec![
+                ("Content-Type".to_string(), "text/plain".to_string()),
+                ("Content-Length".to_string(), body.len().to_string()),
+            ]
+            .into_iter()
+            .collect::<HashMap<String, String>>(),
+            body: Some(body),
+        }
+    }
+
     pub fn encode(&self) -> Result<Vec<u8>> {
         let mut output = Vec::new();
 

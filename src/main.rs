@@ -1,5 +1,4 @@
 use anyhow::Result;
-use std::collections::HashMap;
 use tokio::{
     io::{self, AsyncReadExt, AsyncWriteExt},
     net::{TcpListener, TcpStream},
@@ -19,19 +18,16 @@ fn generate_response(request: &Request) -> Response {
         Response::from_status_code(StatusCode::OK)
     } else if request.target.starts_with("/echo/") {
         let random_string = request.target.trim_start_matches("/echo/");
-        Response {
-            status_code: StatusCode::OK,
-            headers: vec![
-                ("Content-Type".to_string(), "text/plain".to_string()),
-                (
-                    "Content-Length".to_string(),
-                    random_string.len().to_string(),
-                ),
-            ]
-            .into_iter()
-            .collect::<HashMap<String, String>>(),
-            body: Some(random_string.as_bytes().to_vec()),
-        }
+        Response::from_body(random_string.as_bytes().to_vec())
+    } else if request.target == "/user-agent" {
+        Response::from_body(
+            request
+                .headers
+                .get("User-Agent")
+                .unwrap()
+                .as_bytes()
+                .to_vec(),
+        )
     } else {
         Response::from_status_code(StatusCode::NotFound)
     }
