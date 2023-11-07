@@ -21,6 +21,7 @@ fn main() -> Result<()> {
             Ok(mut stream) => {
                 let mut buf = Vec::new();
                 stream.read_to_end(&mut buf)?;
+                println!("Parsing requset...");
                 let request = Request::parse(&buf)?;
                 let response = if request.target == "/" {
                     Response::from_status_code(StatusCode::OK)

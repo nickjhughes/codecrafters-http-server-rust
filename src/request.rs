@@ -26,6 +26,7 @@ impl<'request> Request<'request> {
             assert_eq!(rest[i + 1], b'\n');
             i += 1;
             let line = std::str::from_utf8(&rest[0..i - 1])?;
+            println!("Line: {:?}", line);
             if line.is_empty() {
                 rest = &rest[i + 1..];
                 break;
