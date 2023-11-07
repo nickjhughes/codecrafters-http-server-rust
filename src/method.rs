@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Method {
     Connect,
     Delete,
