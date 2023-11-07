@@ -20,9 +20,11 @@ impl<'request> Request<'request> {
         let mut rest = input;
         loop {
             let mut i = 0;
-            while rest[i] != b'\n' {
+            while rest[i] != b'\r' {
                 i += 1;
             }
+            assert_eq!(rest[i + 1], b'\n');
+            i += 1;
             let line = std::str::from_utf8(&rest[0..i])?;
             if line.is_empty() {
                 rest = &rest[i + 1..];
