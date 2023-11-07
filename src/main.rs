@@ -20,7 +20,7 @@ fn main() -> Result<()> {
         match stream {
             Ok(mut stream) => {
                 let mut buf = Vec::new();
-                stream.read_to_end(&mut buf)?;
+                stream.read(&mut buf)?;
                 println!("Parsing requset...");
                 let request = Request::parse(&buf)?;
                 let response = if request.target == "/" {
