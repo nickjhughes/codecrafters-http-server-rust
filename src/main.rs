@@ -13,21 +13,14 @@ mod request;
 mod response;
 mod status_code;
 
-fn generate_response(request: &Request) -> Response {
+fn generate_response<'a>(request: &'a Request) -> Response<'a> {
     if request.target == "/" {
         Response::from_status_code(StatusCode::OK)
     } else if request.target.starts_with("/echo/") {
         let random_string = request.target.trim_start_matches("/echo/");
-        Response::from_body(random_string.as_bytes().to_vec())
+        Response::from_body(random_string.as_bytes())
     } else if request.target == "/user-agent" {
-        Response::from_body(
-            request
-                .headers
-                .get("User-Agent")
-                .unwrap()
-                .as_bytes()
-                .to_vec(),
-        )
+        Response::from_body(request.headers.get("User-Agent").unwrap().as_bytes())
     } else {
         Response::from_status_code(StatusCode::NotFound)
     }
@@ -48,6 +41,7 @@ async fn handle_connection(mut stream: TcpStream) -> Result<()> {
                     stream.read_exact(&mut body[rest.len()..]).await?;
                     request.set_body(&body);
 
+                    // And reply with response
                     let response = generate_response(&request);
                     stream.write_all(&response.encode()?).await?;
                     stream.shutdown().await?;

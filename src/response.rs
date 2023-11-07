@@ -4,13 +4,13 @@ use std::{collections::HashMap, io::Write};
 use crate::status_code::StatusCode;
 
 #[derive(Debug)]
-pub struct Response {
+pub struct Response<'a> {
     pub status_code: StatusCode,
     pub headers: HashMap<String, String>,
-    pub body: Option<Vec<u8>>,
+    pub body: Option<&'a [u8]>,
 }
 
-impl Response {
+impl<'a> Response<'a> {
     pub fn from_status_code(status_code: StatusCode) -> Self {
         Response {
             status_code,
@@ -19,15 +19,14 @@ impl Response {
         }
     }
 
-    pub fn from_body(body: Vec<u8>) -> Self {
+    pub fn from_body(body: &'a [u8]) -> Self {
+        let mut headers = HashMap::new();
+        headers.insert("Content-Type".into(), "text/plain".into());
+        headers.insert("Content-Length".into(), body.len().to_string());
+
         Response {
             status_code: StatusCode::OK,
-            headers: vec![
-                ("Content-Type".to_string(), "text/plain".to_string()),
-                ("Content-Length".to_string(), body.len().to_string()),
-            ]
-            .into_iter()
-            .collect::<HashMap<String, String>>(),
+            headers,
             body: Some(body),
         }
     }
