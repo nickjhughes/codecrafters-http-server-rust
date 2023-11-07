@@ -26,25 +26,42 @@ fn generate_response<'a>(request: &'a Request) -> Response<'a> {
     }
 }
 
-async fn handle_connection(mut stream: TcpStream) -> Result<()> {
+async fn process(mut stream: TcpStream) {
+    eprintln!("{:?}: New connection", stream.peer_addr().unwrap());
+
     let mut buf = Vec::with_capacity(1024);
 
     loop {
         match stream.try_read_buf(&mut buf) {
-            Ok(0) => break,
-            Ok(_) => {
-                let (rest, request) = Request::parse_header(&buf)?;
+            Ok(0) => {
+                eprintln!("{:?}: Read 0 bytes", stream.peer_addr().unwrap());
+                break;
+            }
+            Ok(n) => {
+                eprintln!("{:?}: Read {n} bytes", stream.peer_addr().unwrap());
+
+                let (rest, request) = Request::parse_header(&buf).unwrap();
                 if let Some(mut request) = request {
+                    eprintln!("{:?}: Got complete request", stream.peer_addr().unwrap());
+
                     // Got complete request header, now read body
                     let mut body = rest.to_vec();
-                    body.resize(request.body_len, 0);
-                    stream.read_exact(&mut body[rest.len()..]).await?;
-                    request.set_body(&body);
+                    if request.body_len > 0 {
+                        body.resize(request.body_len, 0);
+                        stream.read_exact(&mut body[rest.len()..]).await.unwrap();
+                        request.set_body(&body);
+                    }
 
                     // And reply with response
                     let response = generate_response(&request);
-                    stream.write_all(&response.encode()?).await?;
-                    stream.shutdown().await?;
+                    eprintln!(
+                        "{:?}: Replying with {:?}",
+                        response,
+                        stream.peer_addr().unwrap()
+                    );
+                    stream.write_all(&response.encode().unwrap()).await.unwrap();
+                    // stream.shutdown().await?;
+                    // eprintln!("{:?}: Shut down connection", stream.peer_addr().unwrap());
 
                     break;
                 } else {
@@ -56,20 +73,21 @@ async fn handle_connection(mut stream: TcpStream) -> Result<()> {
                 continue;
             }
             Err(e) => {
-                anyhow::bail!("failed to read from stream: {:?}", e)
+                panic!("failed to read from stream: {:?}", e)
             }
         }
     }
-
-    Ok(())
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let listener = TcpListener::bind("127.0.0.1:4221").await?;
+    // eprintln!("Listening on {:?}", listener.local_addr()?);
 
     loop {
         let (stream, _) = listener.accept().await?;
-        handle_connection(stream).await?;
+        tokio::spawn(async move {
+            process(stream).await;
+        });
     }
 }
