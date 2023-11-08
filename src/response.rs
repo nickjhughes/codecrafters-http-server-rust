@@ -19,9 +19,12 @@ impl Response {
         }
     }
 
-    pub fn from_body(body: Vec<u8>) -> Self {
+    pub fn from_body(body: Vec<u8>, content_type: Option<String>) -> Self {
         let mut headers = HashMap::new();
-        headers.insert("Content-Type".into(), "text/plain".into());
+        headers.insert(
+            "Content-Type".into(),
+            content_type.unwrap_or("text/plain".into()),
+        );
         headers.insert("Content-Length".into(), body.len().to_string());
 
         Response {

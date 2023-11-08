@@ -19,7 +19,7 @@ fn generate_response(request: &Request, directory: Option<PathBuf>) -> Response 
         Response::from_status_code(StatusCode::OK)
     } else if request.target.starts_with("/echo/") {
         let random_string = request.target.trim_start_matches("/echo/");
-        Response::from_body(random_string.as_bytes().to_vec())
+        Response::from_body(random_string.as_bytes().to_vec(), None)
     } else if request.target == "/user-agent" {
         Response::from_body(
             request
@@ -28,13 +28,14 @@ fn generate_response(request: &Request, directory: Option<PathBuf>) -> Response 
                 .unwrap()
                 .as_bytes()
                 .to_vec(),
+            None,
         )
     } else if request.target.starts_with("/files/") {
         let mut path = directory.unwrap();
         path.push(request.target.trim_start_matches("/files/"));
         if path.exists() {
             let file_contents = fs::read(path).unwrap();
-            Response::from_body(file_contents)
+            Response::from_body(file_contents, Some("application/octet-stream".into()))
         } else {
             Response::from_status_code(StatusCode::NotFound)
         }
