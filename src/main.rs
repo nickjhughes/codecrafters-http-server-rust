@@ -5,6 +5,7 @@ use tokio::{
     net::{TcpListener, TcpStream},
 };
 
+use method::Method;
 use request::Request;
 use response::Response;
 use status_code::StatusCode;
@@ -33,11 +34,21 @@ fn generate_response(request: &Request, directory: Option<PathBuf>) -> Response 
     } else if request.target.starts_with("/files/") {
         let mut path = directory.unwrap();
         path.push(request.target.trim_start_matches("/files/"));
-        if path.exists() {
-            let file_contents = fs::read(path).unwrap();
-            Response::from_body(file_contents, Some("application/octet-stream".into()))
-        } else {
-            Response::from_status_code(StatusCode::NotFound)
+
+        match request.method {
+            Method::Get => {
+                if path.exists() {
+                    let file_contents = fs::read(path).unwrap();
+                    Response::from_body(file_contents, Some("application/octet-stream".into()))
+                } else {
+                    Response::from_status_code(StatusCode::NotFound)
+                }
+            }
+            Method::Post => {
+                fs::write(path, request.body.unwrap()).unwrap();
+                Response::from_status_code(StatusCode::Created)
+            }
+            _ => Response::from_status_code(StatusCode::NotFound),
         }
     } else {
         Response::from_status_code(StatusCode::NotFound)
